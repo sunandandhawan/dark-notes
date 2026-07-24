@@ -2,242 +2,341 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dark Notes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Notes</title>
     <meta name="theme-color" content="#000000">
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
             --bg: #000000;
-            --surface: #121212;
-            --border: #333333;
+            --surface: #151515;
             --text: #e0e0e0;
-            --text-muted: #9e9e9e;
+            --text-muted: #888888;
             --accent: #ffffff;
-            --danger: #cf6679;
+            --danger: #ff5252;
         }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             background-color: var(--bg);
             color: var(--text);
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 800px;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 16px;
-        }
-
-        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
-
-        .btn-group { display: flex; gap: 10px; }
-
-        button, .btn {
-            background: var(--bg);
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-        }
-
-        button:hover, .btn:hover {
-            background: var(--surface);
-            border-color: var(--accent);
-        }
-
-        .editor {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 30px;
-            background: var(--surface);
             padding: 16px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
+            padding-bottom: 90px; /* Space for FAB */
         }
 
-        input[type="text"], textarea {
-            background: var(--bg);
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 12px;
-            border-radius: 6px;
-            font-family: inherit;
-            resize: vertical;
-        }
-        
-        input[type="text"]:focus, textarea:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
+        .hidden { display: none !important; }
 
-        textarea { min-height: 100px; }
-
-        #saveBtn {
-            background: var(--text);
-            color: var(--bg);
-            font-weight: bold;
-            border: none;
-        }
-        #saveBtn:hover { background: #ccc; }
-
+        /* Notes Grid View */
         .notes-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+            gap: 12px;
+        }
+        @media (min-width: 600px) {
+            .notes-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
         }
 
         .note-card {
             background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
+            border-radius: 12px;
+            padding: 18px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .note-card:active { opacity: 0.7; }
+
+        .note-title {
+            margin: 0 0 6px 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .note-body {
+            margin: 0;
+            color: var(--text-muted);
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            /* Truncate long previews */
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .note-date {
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: #555;
+        }
+
+        /* Collapsible FAB Menu */
+        .fab-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            z-index: 10;
+        }
+
+        .fab-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 16px;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+            transition: all 0.2s ease;
+        }
+        .fab-menu.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .fab-menu button, .fab-menu label {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid #333;
+            padding: 12px 20px;
+            border-radius: 24px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            text-align: right;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .fab {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 28px;
+            font-weight: 300;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+        .fab.active { transform: rotate(45deg); }
+
+        /* Full Screen Mobile Editor */
+        .editor-view {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 20;
             display: flex;
             flex-direction: column;
         }
 
-        .note-title {
-            margin: 0 0 10px 0;
-            font-size: 1.1rem;
-        }
-
-        .note-body {
-            margin: 0 0 16px 0;
-            color: var(--text-muted);
-            white-space: pre-wrap;
-            flex-grow: 1;
-            font-size: 0.95rem;
-            line-height: 1.4;
-        }
-
-        .note-footer {
+        .editor-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            border-top: 1px solid var(--border);
-            padding-top: 12px;
+            padding: 16px;
+            padding-top: max(16px, env(safe-area-inset-top)); /* Support for mobile notches */
+            background: var(--bg);
         }
 
-        .delete-btn {
+        .editor-header button {
             background: transparent;
-            border: 1px solid var(--danger);
-            color: var(--danger);
-            padding: 4px 8px;
+            color: var(--accent);
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 8px;
         }
-        .delete-btn:hover { background: rgba(207, 102, 121, 0.1); border-color: var(--danger); }
+        .editor-header button.danger { color: var(--danger); }
 
-        #fileInput { display: none; }
+        #noteContent {
+            flex-grow: 1;
+            background: var(--bg);
+            color: var(--text);
+            border: none;
+            padding: 16px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1>Dark Notes</h1>
-            <div class="btn-group">
+    <!-- Main View: Only Saved Notes -->
+    <div id="main-view">
+        <div class="notes-grid" id="notesGrid"></div>
+        
+        <!-- Collapsible Menu -->
+        <div class="fab-container">
+            <div class="fab-menu" id="fabMenu">
                 <button onclick="exportNotes()">Export JSON</button>
-                <label class="btn" for="fileInput">Import JSON</label>
-                <input type="file" id="fileInput" accept=".json">
+                <label for="fileInput">Import JSON</label>
+                <input type="file" id="fileInput" accept=".json" style="display:none">
+                <button onclick="openEditor()">Create Note</button>
             </div>
-        </header>
+            <button class="fab" id="fabToggle" onclick="toggleMenu()">+</button>
+        </div>
+    </div>
 
-        <main>
-            <div class="editor">
-                <input type="text" id="noteTitle" placeholder="Note Title...">
-                <textarea id="noteBody" placeholder="Write your note here..."></textarea>
-                <button id="saveBtn" onclick="addNote()">Save Note</button>
-            </div>
-
-            <div class="notes-grid" id="notesGrid"></div>
-        </main>
+    <!-- Mobile-friendly Editor Overlay -->
+    <div id="editor-view" class="editor-view hidden">
+        <div class="editor-header">
+            <button onclick="closeEditor()">Close</button>
+            <button class="danger hidden" id="deleteBtn" onclick="deleteCurrentNote()">Delete</button>
+            <button onclick="saveNote()">Save</button>
+        </div>
+        <textarea id="noteContent" placeholder="Start typing..."></textarea>
     </div>
 
     <script>
         // PWA Service Worker Registration
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('ServiceWorker registered'))
-                    .catch(err => console.error('ServiceWorker error: ', err));
-            });
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
         }
 
-        // App Logic
+        // App State
         let notes = JSON.parse(localStorage.getItem('dark_notes')) || [];
+        let currentEditingId = null;
 
+        // Data Migration (Converts old {title, body} schema to new {content} schema)
+        notes = notes.map(n => {
+            if (n.content === undefined) {
+                const titleStr = n.title ? n.title + '\n' : '';
+                n.content = titleStr + (n.body || '');
+            }
+            return n;
+        });
+
+        // UI Elements
         const notesGrid = document.getElementById('notesGrid');
-        const titleInput = document.getElementById('noteTitle');
-        const bodyInput = document.getElementById('noteBody');
-        const fileInput = document.getElementById('fileInput');
+        const fabMenu = document.getElementById('fabMenu');
+        const fabToggle = document.getElementById('fabToggle');
+        const editorView = document.getElementById('editor-view');
+        const noteContentInput = document.getElementById('noteContent');
+        const deleteBtn = document.getElementById('deleteBtn');
+
+        // Note Parsing Logic
+        function parseNoteContent(rawContent) {
+            if (!rawContent) return { title: null, body: '' };
+            const lines = rawContent.split('\n');
+            const firstLine = lines[0].trim();
+            
+            // Treat first line as title if < 25 letters
+            if (firstLine.length > 0 && firstLine.length < 25) {
+                return {
+                    title: firstLine,
+                    body: lines.slice(1).join('\n').trim()
+                };
+            }
+            // Otherwise, no title, treat everything as body
+            return {
+                title: null,
+                body: rawContent.trim()
+            };
+        }
 
         function renderNotes() {
             notesGrid.innerHTML = '';
-            // Sort by newest first
             const sortedNotes = notes.sort((a, b) => b.timestamp - a.timestamp);
 
             sortedNotes.forEach(note => {
+                const parsed = parseNoteContent(note.content);
                 const date = new Date(note.timestamp).toLocaleDateString(undefined, { 
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                    month: 'short', day: 'numeric' 
                 });
 
                 const card = document.createElement('div');
                 card.className = 'note-card';
-                card.innerHTML = `
-                    <h3 class="note-title">${escapeHTML(note.title) || 'Untitled'}</h3>
-                    <div class="note-body">${escapeHTML(note.body)}</div>
-                    <div class="note-footer">
-                        <span>${date}</span>
-                        <button class="delete-btn" onclick="deleteNote(${note.id})">Delete</button>
-                    </div>
+                card.onclick = () => openEditor(note.id);
+                
+                // Conditionally render title if it exists
+                let html = '';
+                if (parsed.title) {
+                    html += `<h3 class="note-title">${escapeHTML(parsed.title)}</h3>`;
+                }
+                
+                html += `
+                    <div class="note-body">${escapeHTML(parsed.body)}</div>
+                    <div class="note-date">${date}</div>
                 `;
+                
+                card.innerHTML = html;
                 notesGrid.appendChild(card);
             });
         }
 
-        function addNote() {
-            const title = titleInput.value.trim();
-            const body = bodyInput.value.trim();
-
-            if (!body && !title) return alert('Cannot save an empty note.');
-
-            const newNote = {
-                id: Date.now(),
-                title: title,
-                body: body,
-                timestamp: Date.now()
-            };
-
-            notes.push(newNote);
-            saveData();
+        // Editor Functions
+        function openEditor(id = null) {
+            currentEditingId = id;
             
-            titleInput.value = '';
-            bodyInput.value = '';
-            renderNotes();
+            if (id) {
+                const note = notes.find(n => n.id === id);
+                noteContentInput.value = note.content || '';
+                deleteBtn.classList.remove('hidden');
+            } else {
+                noteContentInput.value = '';
+                deleteBtn.classList.add('hidden');
+            }
+
+            editorView.classList.remove('hidden');
+            fabMenu.classList.remove('show');
+            fabToggle.classList.remove('active');
+            
+            // Focus after slight delay for mobile keyboard rendering
+            setTimeout(() => noteContentInput.focus(), 100);
         }
 
-        function deleteNote(id) {
-            if(confirm('Delete this note?')) {
-                notes = notes.filter(n => n.id !== id);
+        function closeEditor() {
+            editorView.classList.add('hidden');
+            noteContentInput.value = '';
+            currentEditingId = null;
+        }
+
+        function saveNote() {
+            const content = noteContentInput.value.trim();
+            
+            if (!content) {
+                if (currentEditingId) deleteCurrentNote(true);
+                else closeEditor();
+                return;
+            }
+
+            if (currentEditingId) {
+                const note = notes.find(n => n.id === currentEditingId);
+                note.content = content;
+                note.timestamp = Date.now();
+            } else {
+                notes.push({
+                    id: Date.now(),
+                    content: content,
+                    timestamp: Date.now()
+                });
+            }
+            
+            saveData();
+            renderNotes();
+            closeEditor();
+        }
+
+        function deleteCurrentNote(force = false) {
+            if (force || confirm('Delete this note?')) {
+                notes = notes.filter(n => n.id !== currentEditingId);
                 saveData();
                 renderNotes();
+                closeEditor();
             }
         }
 
@@ -245,20 +344,26 @@
             localStorage.setItem('dark_notes', JSON.stringify(notes));
         }
 
-        // Export/Import Features
+        // Menu Toggle
+        function toggleMenu() {
+            fabMenu.classList.toggle('show');
+            fabToggle.classList.toggle('active');
+        }
+
+        // Export/Import
         function exportNotes() {
             const dataStr = JSON.stringify(notes, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            
             const a = document.createElement('a');
             a.href = url;
-            a.download = `dark_notes_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `notes_backup_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
+            toggleMenu();
         }
 
-        fileInput.addEventListener('change', (e) => {
+        document.getElementById('fileInput').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
@@ -267,34 +372,40 @@
                 try {
                     const imported = JSON.parse(event.target.result);
                     if (Array.isArray(imported)) {
-                        notes = imported;
+                        // Ensure legacy import compatibility
+                        notes = imported.map(n => {
+                            if (n.content === undefined) {
+                                n.content = (n.title ? n.title + '\n' : '') + (n.body || '');
+                            }
+                            return n;
+                        });
                         saveData();
                         renderNotes();
-                        alert('Notes imported successfully!');
-                    } else {
-                        alert('Invalid JSON format.');
                     }
                 } catch (err) {
                     alert('Error parsing JSON file.');
                 }
-                fileInput.value = ''; // Reset input
+                e.target.value = ''; 
+                toggleMenu();
             };
             reader.readAsText(file);
         });
 
         function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, 
-                tag => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#39;',
-                    '"': '&quot;'
-                }[tag])
-            );
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
         }
 
-        // Initial Render
+        // Close menu if clicking outside
+        document.addEventListener('click', (e) => {
+            if (fabMenu.classList.contains('show') && !e.target.closest('.fab-container')) {
+                toggleMenu();
+            }
+        });
+
+        // Initialize
         renderNotes();
     </script>
 </body>
